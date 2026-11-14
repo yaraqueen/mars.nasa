@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Mars Walk VR HUD</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #05070a;
+    --panel: #0e1319;
+    --line: #22303c;
+    --text: #e6edf3;
+    --muted: #8b9aa8;
+    --hud: #3cff8f;
+    --warn: #ffd23c;
+    --danger: #ff4a4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+  #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 2; overflow-y: auto; }
+  .card { width: 100%; max-width: 480px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px; margin: auto; }
+  h1 { font-size: 22px; letter-spacing: .5px; direction: ltr; text-align: center; color: var(--hud); }
+  .sub { color: var(--muted); text-align: center; font-size: 14px; line-height: 1.7; }
+  .status { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: #0a0f14; border: 1px solid var(--line); line-height: 1.7; }
+  .status.ok { border-color: var(--hud); color: var(--hud); }
+  .status.bad { border-color: var(--warn); color: var(--warn); }
+  button { font: inherit; font-size: 16px; padding: 14px; border-radius: 10px; border: 1px solid var(--line);
+    background: #16202a; color: var(--text); cursor: pointer; }
+  button.primary { background: var(--hud); color: #04150b; border-color: var(--hud); font-weight: 700; }
+  button:disabled { opacity: .45; cursor: default; }
+  #btnXR { display: none; }
+  label.file { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+  label.check { font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  label.check input { width: 18px; height: 18px; accent-color: var(--hud); flex: none; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.9; }
+  .note { font-size: 12px; color: var(--warn); line-height: 1.8; border-top: 1px solid var(--line); padding-top: 10px; }
+  #view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: none; background: #000; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #navBtns { position: fixed; bottom: 18px; left: 0; right: 0; display: none; justify-content: center; gap: 16px; z-index: 3; pointer-events: none; }
+  #navBtns button { pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; background: rgba(0,0,0,0.55); color: var(--hud); border-color: var(--hud); min-width: 120px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <div class="card">
+    <h1>MARS VR HUD</h1>
+    <p class="sub">واقع افتراضي: أنت واقف على سطح المريخ. لف ومشِ، والـ HUD يتعرف على العقبات اللي تشوفها ويقارن البدلة بجو المريخ</p>
+    <p id="status" class="status">جاري تجهيز سطح المريخ...</p>
+    <label class="check"><input type="checkbox" id="vrMode"> عرض مزدوج للنظارة (الجوال داخل نظارة VR)</label>
+    <label class="check"><input type="checkbox" id="autoDemo"> سيناريو تسرب تلقائي في البدلة (للعرض)</label>
+    <button id="btnStart" class="primary" disabled>ابدأ</button>
+    <button id="btnXR">دخول بنظارة WebXR (مثل Meta Quest)</button>
+    <p class="hint">
+      <b>تغيير الاتجاه:</b> لف راسك (جوال أو نظارة) · أو اسحب بالماوس أو الإصبع · أو الأسهم ← →<br>
+      <b>المشي:</b> ↑ ↓ أو W / S · خطوة جانبية A / D · أو أزرار الأسفل · أو زر النظارة (اضغط واستمر)<br>
+      <b>تسرب في البدلة:</b> ضغطة طويلة أو 1 · <b>إعادة ضبط:</b> 0 · <b>الرجوع للقائمة:</b> لمستين أو Esc
+    </p>
+    <p class="note">
+      سطح المريخ مولّد بالحاسب، لكن ملمس الصخور والرمل مقصوص من صور ناسا الخام لمركبة Perseverance (Mastcam-Z يوم 2024).
+      أصناف العقبات وبصمة لون كل صنف مأخوذة من عقبات صنّفناها في نفس الصور. الحساس (الارتفاع والعرض واللون) محاكاة، وأي عقبة ما يطابقها صنف بنسبة 50% أو أكثر تظهر "UNKNOWN".
+      جو المريخ: بيانات Phoenix الحقيقية من NASA PDS (2008) تُعاد بسرعة. قراءات البدلة محاكاة.
+    </p>
+  </div>
+</div>
+
+<canvas id="view" dir="ltr"></canvas>
+<div id="navBtns" dir="ltr"><button id="btnLeft">◀ TURN</button><button id="btnFwd">▲ WALK</button><button id="btnRight">TURN ▶</button></div>
+
+<script>
+  // أي ملف ناقص أو خطأ قبل التشغيل يظهر في المربع بدل ما يسكت الزر
+  window.addEventListener("error", function (e) {
+    var el = document.getElementById("status"), src = e.target && e.target.src;
+    el.textContent = src ? "ما انحمل الملف: " + src.split("/").pop() + " — تأكدوا إن كل ملفات mars_walk مرفوعة." : "خطأ: " + (e.message || "غير معروف");
+    el.className = "status bad";
+  }, true);
+</script>
+<script src="lib/three.min.js"></script>
+<script src="mars_logic.js"></script>
+<script src="walk_logic.js"></script>
+<script src="walk_data.js"></script>
+<script src="walk_app.js"></script>
+</body>
+</html>
