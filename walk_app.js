@@ -1,7 +1,7 @@
 // =====================================================================
 // Mars Walk VR HUD - التطبيق: أنت واقف على سطح المريخ (عالم كامل 360°)، تلف وتمشي،
 // يسار الـ HUD: التعرف على العقبات اللي تشوفها · يمين الـ HUD: البدلة مقابل المريخ
-// الصخور والأرض مكسوّة بصور حقيقية من Perseverance (textures/)
+// الصخور والأرض مكسوّة بصور حقيقية من Perseverance ()
 // =====================================================================
 (function () {
 "use strict";
@@ -9,7 +9,7 @@ const THREE = window.THREE, ML = window.MarsLogic, W = window.WalkLogic, CFG = W
 const $ = id => document.getElementById(id);
 const statusEl = $("status");
 function setStatus(msg, cls) { statusEl.textContent = msg; statusEl.className = "status " + (cls || ""); }
-if (!THREE) { setStatus("ما انحملت مكتبة three.js. تأكدوا إن مجلد lib موجود بجانب الصفحة.", "bad"); return; }
+if (!THREE) { setStatus("ما انحملت مكتبة three.js. تأكدوا إن three.min.js موجود بجانب الصفحة.", "bad"); return; }
 const PROFILES = window.CLASS_PROFILES, TEXCOL = window.TEXTURE_COLORS, ENV = window.PHOENIX_ENV || [];
 
 const C = { hud: "#3cff8f", warn: "#ffd23c", danger: "#ff4a4a", dim: "rgba(60,255,143,0.65)", unk: "#c9a7ff", hw: "#7fb4ff" };
@@ -54,7 +54,7 @@ const loader = new THREE.TextureLoader();
 const LOCAL_FILE = location.protocol === "file:";
 function nasaTex(file, repeat) {
   if (LOCAL_FILE) return null; // المتصفح يمنع الصور المحلية داخل WebGL: نكمل بدون ملمس
-  const t = loader.load(file, undefined, undefined, () => setStatus("ما انحمل ملف الملمس: " + file + " (تأكدوا إن مجلد textures مرفوع)", "bad"));
+  const t = loader.load(file, undefined, undefined, () => setStatus("ما انحمل ملف الملمس: " + file + " (تأكدوا إن صور الملمس مرفوعة)", "bad"));
   t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   if (repeat) t.repeat.set(repeat, repeat);
@@ -84,7 +84,7 @@ function buildScene() {
   sky.renderOrder = -10; scene.add(sky);
 
   // ---- الأرض: ملمس رمل حقيقي من Mastcam-Z يتكرر كل 2.5 م، مع تغير بسيط في السطوع ----
-  const ground = nasaTex("textures/ground.jpg");
+  const ground = nasaTex("ground.jpg");
   const pos = new Float32Array(n1 * n1 * 3), uv = new Float32Array(n1 * n1 * 2), col = new Float32Array(n1 * n1 * 3);
   for (let iz = 0; iz < n1; iz++) for (let ix = 0; ix < n1; ix++) {
     const i = iz * n1 + ix, x = -half + ix * cell, z = -half + iz * cell;
@@ -127,7 +127,7 @@ function buildScene() {
     }
     g.computeVertexNormals(); return g;
   })();
-  const rockTex = [0, 1, 2, 3, 4].map(k => nasaTex("textures/rock_" + k + ".jpg"));
+  const rockTex = [0, 1, 2, 3, 4].map(k => nasaTex("rock_" + k + ".jpg"));
   const groups = rockTex.map(() => []);
   world.rocks.forEach((rk, i) => { rk.tex = i % 5; rk.shade = 0.86 + rk.tint * 0.2; groups[rk.tex].push(rk); });
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), e = new THREE.Euler();
@@ -160,7 +160,7 @@ function buildScene() {
   selfShadow = new THREE.Mesh(shadowGeo, shadowMat.clone()); scene.add(selfShadow);
 
   // ---- المعالم الإضافية ----
-  const outTex = [null, nasaTex("textures/outcrop_1.jpg"), nasaTex("textures/outcrop_2.jpg")];
+  const outTex = [null, nasaTex("outcrop_1.jpg"), nasaTex("outcrop_2.jpg")];
   features.forEach(f => {
     const g = new THREE.Group();
     if (f.kind === "outcrop") {
@@ -202,11 +202,11 @@ function buildScene() {
 const ndc = new THREE.Vector3(), headPos = new THREE.Vector3(), headQuat = new THREE.Quaternion(), fwd = new THREE.Vector3();
 function measured(o) {
   if (o.kind === "rock") {
-    const t = TEXCOL["textures/rock_" + o.ref.tex + ".jpg"];
+    const t = TEXCOL["rock_" + o.ref.tex + ".jpg"];
     return { h: o.ref.h, w: 2 * o.ref.r * Math.max(o.ref.sx, o.ref.sz), lab: [t[0] * o.ref.shade, t[1], t[2]] };
   }
   const f = o.ref;
-  return { h: f.h, w: Math.max(f.w, f.d), lab: f.color || TEXCOL["textures/outcrop_" + f.tex + ".jpg"] };
+  return { h: f.h, w: Math.max(f.w, f.d), lab: f.color || TEXCOL["outcrop_" + f.tex + ".jpg"] };
 }
 function scan() {
   const R = CFG.SCAN_RANGE_M, cand = [];
